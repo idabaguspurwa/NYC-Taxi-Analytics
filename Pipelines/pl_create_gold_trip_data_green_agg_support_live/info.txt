@@ -1,0 +1,6 @@
+selected resource name:		pl_create_gold_trip_data_green_agg
+selected resource type:		pipeline
+workspace name:			synapse-course-workspaces
+workspace location:		southeastasia
+subscription id:		83f309a5-0367-4ba4-a8f4-d9cfada95cd1
+time of download (UTC):		Wed, 18 Jun 2025 15:06:51 GMT

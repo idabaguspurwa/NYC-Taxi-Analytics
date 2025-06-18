@@ -1,0 +1,22 @@
+{
+    "name": "coursepool",
+    "location": "southeastasia",
+    "properties": {
+        "autoPause": {
+            "enabled": true,
+            "delayInMinutes": 10
+        },
+        "autoScale": {
+            "enabled": false,
+            "maxNodeCount": 0,
+            "minNodeCount": 0
+        },
+        "nodeCount": 3,
+        "nodeSize": "Small",
+        "nodeSizeFamily": "MemoryOptimized",
+        "sparkVersion": "3.4",
+        "isComputeIsolationEnabled": false,
+        "sessionLevelPackagesEnabled": true,
+        "annotations": []
+    }
+}

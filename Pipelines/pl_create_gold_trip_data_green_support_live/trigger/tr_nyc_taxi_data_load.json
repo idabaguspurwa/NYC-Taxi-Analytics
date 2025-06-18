@@ -1,0 +1,25 @@
+{
+    "name": "tr_nyc_taxi_data_load",
+    "properties": {
+        "annotations": [],
+        "runtimeState": "Stopped",
+        "pipelines": [
+            {
+                "pipelineReference": {
+                    "referenceName": "pl_execute_all_pipelines",
+                    "type": "PipelineReference"
+                }
+            }
+        ],
+        "type": "ScheduleTrigger",
+        "typeProperties": {
+            "recurrence": {
+                "frequency": "Minute",
+                "interval": 15,
+                "startTime": "2025-05-24T09:15:00",
+                "endTime": "2025-05-24T10:00:00",
+                "timeZone": "SE Asia Standard Time"
+            }
+        }
+    }
+}

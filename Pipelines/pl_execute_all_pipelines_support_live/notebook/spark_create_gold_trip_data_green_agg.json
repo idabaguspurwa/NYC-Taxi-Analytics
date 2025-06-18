@@ -1,0 +1,155 @@
+{
+    "name": "spark_create_gold_trip_data_green_agg",
+    "properties": {
+        "folder": {
+            "name": "nyc_taxi/ldw"
+        },
+        "nbformat": 4,
+        "nbformat_minor": 2,
+        "bigDataPool": {
+            "referenceName": "coursepool",
+            "type": "BigDataPoolReference"
+        },
+        "sessionProperties": {
+            "driverMemory": "28g",
+            "driverCores": 4,
+            "executorMemory": "28g",
+            "executorCores": 4,
+            "numExecutors": 2,
+            "runAsWorkspaceSystemIdentity": false,
+            "conf": {
+                "spark.dynamicAllocation.enabled": "false",
+                "spark.dynamicAllocation.minExecutors": "2",
+                "spark.dynamicAllocation.maxExecutors": "2",
+                "spark.autotune.trackingId": "7ec59d2a-a512-4167-97f6-f4e75112185e"
+            }
+        },
+        "metadata": {
+            "saveOutput": true,
+            "enableDebugMode": false,
+            "language_info": {
+                "name": "python"
+            },
+            "a365ComputeOptions": {
+                "id": "/subscriptions/83f309a5-0367-4ba4-a8f4-d9cfada95cd1/resourceGroups/synapse-rg/providers/Microsoft.Synapse/workspaces/synapse-course-workspaces/bigDataPools/coursepool",
+                "name": "coursepool",
+                "type": "Spark",
+                "endpoint": "https://synapse-course-workspaces.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/coursepool",
+                "auth": {
+                    "type": "AAD",
+                    "authResource": "https://dev.azuresynapse.net",
+                    "authHeader": null
+                },
+                "sparkVersion": "3.4",
+                "nodeCount": 3,
+                "cores": 4,
+                "memory": 28,
+                "extraHeader": null
+            },
+            "sessionKeepAliveTimeout": 30
+        },
+        "cells": [
+            {
+                "cell_type": "markdown",
+                "metadata": {
+                    "nteract": {
+                        "transient": {
+                            "deleting": false
+                        }
+                    }
+                },
+                "source": [
+                    "## Trip Data Aggregation\n",
+                    "### Group by Columns\n",
+                    "1. Year\n",
+                    "2. Month\n",
+                    "3. Pickup Location ID\n",
+                    "4. Dropoff Location ID\n",
+                    "\n",
+                    "### Aggregated Columns\n",
+                    "1. Total Trip Count\n",
+                    "2. Total Fare Amount\n",
+                    "\n",
+                    "### Purpose\n",
+                    "Demonstrate the integration between Spark Pool and Serverless SQL Pool\n",
+                    "1. Create the aggregated data in Spark Pool\n",
+                    "2. Access the data from Serverless SQL Pool"
+                ]
+            },
+            {
+                "cell_type": "code",
+                "source": [
+                    "# Set the folder paths so that it can be used\n",
+                    "bronze_folder_path = 'abfss://nyc-taxi-data@synapsedatalakes.dfs.core.windows.net/raw'\n",
+                    "silver_folder_path = 'abfss://nyc-taxi-data@synapsedatalakes.dfs.core.windows.net/silver'\n",
+                    "gold_folder_path = 'abfss://nyc-taxi-data@synapsedatalakes.dfs.core.windows.net/gold'"
+                ],
+                "outputs": [],
+                "execution_count": 4
+            },
+            {
+                "cell_type": "code",
+                "source": [
+                    "# Set the spark config to be able to get the partitioned columns year and month as strings rather than integers\n",
+                    "spark.conf.set(\"spark.sql.sources.partitionColumnTypeInference.enabled\", \"false\")"
+                ],
+                "outputs": [],
+                "execution_count": 5
+            },
+            {
+                "cell_type": "code",
+                "metadata": {
+                    "microsoft": {
+                        "language": "sparksql"
+                    },
+                    "collapsed": false
+                },
+                "source": [
+                    "%%sql\n",
+                    "\n",
+                    "-- Create database to which we're going to write the data\n",
+                    "\n",
+                    "CREATE DATABASE IF NOT EXISTS nyc_taxi_ldw_spark\n",
+                    "LOCATION 'abfss://nyc-taxi-data@synapsedatalakes.dfs.core.windows.net/gold';"
+                ],
+                "outputs": [],
+                "execution_count": 6
+            },
+            {
+                "cell_type": "code",
+                "source": [
+                    "# Read the silver data to be processed\n",
+                    "trip_data_green_df = spark.read.parquet(f\"{silver_folder_path}/trip_data_green\")"
+                ],
+                "outputs": [],
+                "execution_count": 7
+            },
+            {
+                "cell_type": "code",
+                "source": [
+                    "# Perform the required aggregations\n",
+                    "# 1. Total trip count\n",
+                    "# 2. Total fare count\n",
+                    "from pyspark.sql.functions import *\n",
+                    "\n",
+                    "trip_data_green_agg_df = trip_data_green_df \\\n",
+                    "    .groupBy(\"year\", \"month\", \"pu_location_id\", \"do_location_id\") \\\n",
+                    "    .agg(count(lit(1)).alias(\"total_trip_count\"),\n",
+                    "    round(sum(\"fare_amount\"), 2).alias(\"total_fare_amount\"))"
+                ],
+                "outputs": [],
+                "execution_count": 8
+            },
+            {
+                "cell_type": "code",
+                "source": [
+                    "# Write the aggregated data to the gold table for consumption\n",
+                    "\n",
+                    "trip_data_green_agg_df.write.mode(\"overwrite\").partitionBy(\"year\", \"month\").format(\"parquet\").saveAsTable(\"nyc_taxi_ldw_spark.trip_data_green_agg\")"
+                ],
+                "outputs": [],
+                "execution_count": 9
+            }
+        ]
+    }
+}
